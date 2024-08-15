@@ -1,0 +1,38 @@
+fullnameOverride: "pubsub-marketplace"
+component: "pubsub"
+partOf: "mp"
+
+# distroless: user nonroot uid=gid=65532
+image:
+  registry: europe-west1-docker.pkg.dev/v7go-shared-1d589eb4/v7go-registry
+  repository: marketplace-pubsub
+  tag: 139a4fa1c7b8fdc482014f4073e7f5b8a8b0104e
+
+container:
+  resources:
+    limits:
+      cpu: 250m
+      memory: 512Mi
+
+deployment:
+  strategy:
+    type: "Recreate"
+
+# No ports to expose and no service
+ports:
+service:
+  enabled: false
+
+serviceAccount:
+  annotations:
+    # Attach Google Cloud SA to Kubernetes SA using workload identity
+    iam.gke.io/gcp-service-account: "v7labs-mp-backend@v7labs-public-6fa79b13.iam.gserviceaccount.com"
+
+### Environment variables
+
+environment:
+  ## Marketplace PROD
+  TOPIC_STRING: "projects/cloudcommerceproc-prod/topics/v7labs-public-6fa79b13"
+  # The topic name on the Google side is equal to your own project ID where the subscription will sit
+  SUBSCRIPTION_PROJECT: "v7labs-public-6fa79b13"
+  SUBSCRIPTION_NAME: "v7labs-mp-subscription"

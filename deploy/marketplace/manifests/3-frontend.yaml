@@ -1,0 +1,31 @@
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: frontend
+  namespace: argo
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  sources:
+    - repoURL: "git@github.com:zencore-dev/blockapt-infra.git"
+      targetRevision: "main"
+      path: deploy/charts/blockapt
+      helm:
+        releaseName: frontend
+        valueFiles:
+          - $values/deploy/marketplace/values/frontend.yaml
+    - ref: values
+      repoURL: "git@github.com:zencore-dev/blockapt-infra.git"
+      targetRevision: "main"
+  destination:
+    namespace: marketplace
+    server: "https://kubernetes.default.svc"
+  syncPolicy:
+    automated: {}
+    syncOptions:
+      - CreateNamespace=true
+    managedNamespaceMetadata:
+      labels:
+        shared-gateway-access: "true"

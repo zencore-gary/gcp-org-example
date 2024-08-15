@@ -1,0 +1,48 @@
+fullnameOverride: "frontend-marketplace"
+component: "frontend"
+partOf: "mp"
+
+# nginx-unprivileged: user nginx uid=gid=101
+image:
+  registry: europe-west1-docker.pkg.dev/v7go-shared-1d589eb4/v7go-registry
+  repository: marketplace-frontend
+  tag: 37cc9a31957cd77241b96c7b3c69f3d512c73c52
+
+container:
+  # readOnlyRootFilesystem - Add volume mounts for Nginx cache and temporary files
+  extraVolumeMounts:
+  - name: cache
+    mountPath: /var/cache/nginx
+  - name: tmp
+    mountPath: /tmp
+  livenessProbe:
+    httpGet:
+      path: /healthz
+      port: http
+  resources:
+    limits:
+      cpu: 1
+      memory: 1Gi
+  securityContext:
+    runAsGroup: 101
+    runAsUser: 101
+
+pod:
+  # readOnlyRootFilesystem - Add volumes for Nginx cache and temporary files
+  extraVolumes:
+  - name: cache
+    emptyDir: {}
+  - name: tmp
+    emptyDir: {}
+  securityContext:
+    fsGroup: 101
+
+deployment:
+  strategy:
+    type: "Recreate"
+
+networkPolicy:
+  enabled: true
+
+environment:
+  MARKETPLACE_SSO_URL: "https://login.marketplace.gcp.v7labs.com"

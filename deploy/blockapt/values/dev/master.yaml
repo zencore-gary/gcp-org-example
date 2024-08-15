@@ -1,0 +1,91 @@
+component: "master"
+
+image:
+  repository: master
+
+container:
+  # command: ["tail", "-f", "/dev/null"]
+  env:
+    - name: DB_PASSWORD_MONGO
+      valueFrom:
+        secretKeyRef:
+          name: mongodb-icyber-logger-db-master
+          key: password
+    - name: DB_USERNAME_USER_MONGO
+      valueFrom:
+        secretKeyRef:
+          name: mongodb-icyber-logger-db-master
+          key: username
+  resources:
+    requests:
+      cpu: 1
+      memory: 2Gi
+    limits:
+      cpu: 2
+      memory: 8Gi
+  securityContext:
+    readOnlyRootFilesystem: false
+    runAsGroup: 33
+    runAsUser: 33
+  livenessProbe:
+    tcpSocket:
+      port: 8080
+    # Wait for migrations to run
+    initialDelaySeconds: 60
+
+pod:
+  securityContext:
+    fsGroup: 33
+
+serviceAccount:
+  annotations:
+    # Attach Google Cloud SA to Kubernetes SA using workload identity
+    iam.gke.io/gcp-service-account: "blockapt-dev-master@blockapt-dev-72311d19.iam.gserviceaccount.com"  # From Terraform output
+  extraSecrets:
+    - name: mongodb-icyber-logger-db-master
+
+deployment:
+  strategy:
+    type: "Recreate"
+
+service:
+  annotations:
+    # Gateway + HTTPRoute + NEG on Kubernetes service
+    cloud.google.com/neg: '{"exposed_ports":{"8080":{}}}'
+
+### MySQL
+
+# https://cloud.google.com/sql/docs/mysql/connect-auth-proxy
+cloudSqlProxy:
+  enabled: true
+  instanceConnectionName: "blockapt-dev-72311d19:europe-west1:blockapt-dev-euw1-5284a437"  # From Terraform output
+  resources:
+    # Cookie monster
+    limits:
+      cpu: 1
+      memory: 2Gi
+
+### Environment variables
+
+environment:
+  APP_ENV: "dev"
+  APP_HOST: "0.0.0.0"
+  APP_KEY: "base64:9mB3n0w3wMf6SC0QF6yNby0A2DT1/Wa4G/rjvwenYng="
+  APP_DEBUG: true
+  APP_LOG_LEVEL: "debug"
+  APP_URL: "https://master.blockapt.immersion.dev"
+  APP_API_URL: "https://master.blockapt.immersion.dev"
+  FORCE_HTTPS: true
+  ## Composer: disable the warning about running commands as root
+  COMPOSER_ALLOW_SUPERUSER: 1
+  ## Laravel Scout driver
+  SCOUT_DRIVER: "database"
+  ## MySQL
+  DB_HOST: "127.0.0.1"
+  DB_PORT: 3306
+  DB_USERNAME: "blockapt-dev-master"
+  DB_DATABASE: "blockapt"
+  ## MongoDB
+  DB_HOST_MONGO: "mongodb-svc"
+  DB_PORT_MONGO: "27017"
+  DB_DATABASE_MONGO: "icyber_logger_db"

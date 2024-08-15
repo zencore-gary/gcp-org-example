@@ -1,0 +1,36 @@
+---
+installCRDs: true
+
+global:
+  leaderElection:
+    namespace: "cert-manager"
+
+serviceAccount:
+  annotations:
+    iam.gke.io/gcp-service-account: "v7labs-mp-cert-manager@v7labs-public-6fa79b13.iam.gserviceaccount.com"
+
+extraArgs:
+  - "--feature-gates=ExperimentalGatewayAPISupport=true"
+
+resources:
+  limits:
+    cpu: 250m
+    memory: 512Mi
+
+webhook:
+  resources:
+    limits:
+      cpu: 250m
+      memory: 512Mi
+
+cainjector:
+  resources:
+    limits:
+      cpu: 250m
+      memory: 512Mi
+
+startupapicheck:
+  resources:
+    limits:
+      cpu: 250m
+      memory: 512Mi

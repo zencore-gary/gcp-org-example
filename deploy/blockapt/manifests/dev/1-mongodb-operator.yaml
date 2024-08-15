@@ -1,0 +1,28 @@
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: mongodb-operator
+  namespace: argo
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  sources:
+    - chart: community-operator
+      repoURL: https://mongodb.github.io/helm-charts
+      targetRevision: 0.9.0
+      helm:
+        releaseName: mongodb-operator
+        valueFiles:
+          - $values/deploy/blockapt/values/dev/mongodb-operator.yaml
+    - ref: values
+      repoURL: "git@github.com:zencore-dev/blockapt-infra.git"
+      targetRevision: "main"
+  destination:
+    namespace: mongodb-operator
+    server: "https://kubernetes.default.svc"
+  syncPolicy:
+    automated: {}
+    syncOptions:
+      - CreateNamespace=true

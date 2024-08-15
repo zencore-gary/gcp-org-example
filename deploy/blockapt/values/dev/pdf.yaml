@@ -1,0 +1,26 @@
+component: graphs
+
+image:
+  repository: graphs
+
+# node: user node uid=gid=1000
+container:
+  resources:
+    requests:
+      cpu: 100m
+      memory: 1Gi
+    limits:
+      cpu: 1
+      memory: 1Gi
+  securityContext:
+    runAsGroup: 1000
+    runAsUser: 1000
+
+pod:
+  securityContext:
+    fsGroup: 1000
+
+# Nothing to expose
+ports: null
+service:
+  enabled: false

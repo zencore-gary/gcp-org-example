@@ -1,0 +1,26 @@
+---
+bases:
+  - helmfiles/helmDefaults.yaml
+  - helmfiles/environments.yaml
+
+helmfiles:
+  - path: helmfiles/cert-manager.yaml
+  - path: helmfiles/external-secrets.yaml
+  - path: helmfiles/mongodb-operator.yaml
+
+releases:
+  - name: cert-manager-issuers
+    namespace: canton
+    chart: ./blockapt/manifests/{{ .Environment.Name }}//2-clusterissuers.yaml
+    labels:
+      component: tls
+    needs:
+      - cert-manager/cert-manager
+
+  - name: external-secret-stores
+    namespace: canton
+    chart: ./blockapt/manifests/{{ .Environment.Name }}//2-clustersecretstore.yaml
+    labels:
+      component: secrets
+    needs:
+      - external-secrets/ external-secrets

@@ -1,0 +1,58 @@
+{{- if .Values.networkPolicy.enabled }}
+{{/*
+Network policy to allow only ingress from the same namespace
+and Google Cloud services
+*/}}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ template "common.fullname" . }}
+  labels: {{- include "common.labels" . | nindent 4 }}
+    {{- with .Values.commonLabels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+    {{- with .Values.networkPolicy.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+    - Egress
+  egress:
+  {{- if .Values.networkPolicy.allowExternalEgress }}
+    # Allow all egress traffic
+    - {}
+  {{- else }}
+    {{- with .Values.networkPolicy.extraEgress }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  {{- end }}
+  ingress:
+    - from:
+        # From same namespace only
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: {{ .Release.Namespace }}
+        {{- with .Values.networkPolicy.allowGoogleCloudProbers }}
+        # From Google Cloud probers
+        # https://cloud.google.com/load-balancing/docs/health-check-concepts#ip-ranges
+        - ipBlock:
+            cidr: 35.191.0.0/16
+        - ipBlock:
+            cidr: 130.211.0.0/22
+        {{- end }}
+        {{- with .Values.networkPolicy.allowGoogleCloudManagedCollection }}
+        # From Google Cloud Managed collection (Prometheus-based collectors running as a Daemonset)
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: gke-gmp-system
+          podSelector:
+            matchLabels:
+              app: managed-prometheus-collector
+        {{- end }}
+    {{- with .Values.networkPolicy.extraIngress }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+{{- end }}

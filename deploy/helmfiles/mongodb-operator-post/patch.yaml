@@ -1,0 +1,12 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mongodb-kubernetes-operator
+spec:
+  template:
+    spec:
+      tolerations:
+      - key: scope
+        operator: Equal
+        value: workload

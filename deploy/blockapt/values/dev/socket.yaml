@@ -1,0 +1,47 @@
+component: "socket"
+
+image:
+  repository: socket
+
+# node: user node uid=gid=1000
+container:
+  resources:
+    requests:
+      cpu: 100m
+      memory: 1Gi
+    limits:
+      cpu: 1
+      memory: 1Gi
+  securityContext:
+    runAsGroup: 1000
+    runAsUser: 1000
+
+pod:
+  securityContext:
+    fsGroup: 1000
+
+serviceAccount:
+  annotations:
+    # Attach Google Cloud SA to Kubernetes SA using workload identity
+    iam.gke.io/gcp-service-account: "blockapt-dev-socket@blockapt-dev-72311d19.iam.gserviceaccount.com"  # From Terraform output
+
+### MySQL
+
+# https://cloud.google.com/sql/docs/mysql/connect-auth-proxy
+cloudSqlProxy:
+  enabled: true
+  instanceConnectionName: "blockapt-dev-72311d19:europe-west1:blockapt-dev-euw1-5284a437"  # From Terraform output
+  resources:
+    # Cookie monster
+    limits:
+      cpu: 1
+      memory: 2Gi
+
+### Environment variables
+
+environment:
+  ## MySQL
+  DB_HOST: "127.0.0.1"
+  DB_PORT: 3306
+  DB_USERNAME: "blockapt-dev-socket"
+  DB_DATABASE: "blockapt"

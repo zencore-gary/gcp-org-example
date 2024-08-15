@@ -1,0 +1,31 @@
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: blockapt-master
+  namespace: argo
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  sources:
+    - repoURL: "git@github.com:zencore-dev/blockapt-infra.git"
+      targetRevision: "main"
+      path: deploy/charts/blockapt
+      helm:
+        releaseName: master
+        valueFiles:
+          - $values/deploy/blockapt/values/dev/master.yaml
+    - ref: values
+      repoURL: "git@github.com:zencore-dev/blockapt-infra.git"
+      targetRevision: "main"
+  destination:
+    namespace: blockapt
+    server: "https://kubernetes.default.svc"
+  syncPolicy:
+    automated: {}
+    syncOptions:
+      - CreateNamespace=true
+    managedNamespaceMetadata:
+      labels:
+        shared-gateway-access: "true"

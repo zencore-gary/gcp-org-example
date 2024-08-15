@@ -1,0 +1,43 @@
+---
+installCRDs: true
+
+global:
+  leaderElection:
+    namespace: "cert-manager"
+
+globalTolerations: &globalTolerations
+  - key: "components.gke.io/gke-managed-components"
+    operator: Equal
+    value: "true"
+
+serviceAccount:
+  annotations:
+    iam.gke.io/gcp-service-account: "blockapt-dev-cert-manager@blockapt-dev-72311d19.iam.gserviceaccount.com" # From Terraform output
+
+resources:
+  limits:
+    cpu: 50m
+    memory: 64Mi
+
+tolerations: *globalTolerations
+
+webhook:
+  resources:
+    limits:
+      cpu: 50m
+      memory: 64Mi
+  tolerations: *globalTolerations
+
+cainjector:
+  resources:
+    limits:
+      cpu: 50m
+      memory: 64Mi
+  tolerations: *globalTolerations
+
+startupapicheck:
+  resources:
+    limits:
+      cpu: 50m
+      memory: 64Mi
+  tolerations: *globalTolerations

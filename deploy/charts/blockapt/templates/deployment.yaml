@@ -1,0 +1,174 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ template "common.fullname" . }}
+  {{- with .Values.deployment.annotations }}
+  annotations: {{- toYaml . | nindent 4 }}
+  {{- end }}
+  labels: {{- include "common.labels" . | nindent 4 }}
+    {{- with .Values.commonLabels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+    {{- with .Values.deployment.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels: {{- include "common.selectorLabels" . | nindent 6 }}
+  {{- with .Values.deployment.strategy }}
+  strategy: {{- toYaml . | nindent 4 }}
+  {{- end }}
+  template:
+    metadata:
+      annotations:
+        "checksum/config": {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum | quote }}
+        "checksum/env": {{ include (print $.Template.BasePath "/configmap-env.yaml") . | sha256sum | quote }}
+        "checksum/externalsecret": {{ include (print $.Template.BasePath "/externalsecret-env.yaml") . | sha256sum | quote }}
+        {{- with .Values.pod.annotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      labels: {{- include "common.labels" . | nindent 8 }}
+        {{- with .Values.commonLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+        {{- with .Values.pod.labels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- if .Values.serviceAccount.create }}
+      serviceAccountName: {{ template "common.serviceAccountName" . }}
+      {{- end }}
+      {{- with .Values.image.pullSecrets }}
+      imagePullSecrets: {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- if .Values.pod.securityContext.enabled }}
+      securityContext: {{- omit .Values.pod.securityContext "enabled" | toYaml | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: {{ .Values.component }}
+          image: {{ include "common.image" . | quote }}
+          imagePullPolicy: {{ .Values.image.pullPolicy | quote }}
+          {{- if .Values.container.securityContext.enabled }}
+          securityContext: {{- omit .Values.container.securityContext "enabled" | toYaml | nindent 12 }}
+          {{- end }}
+          {{- with .Values.container.command }}
+          command: {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.container.args }}
+          args: {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.container.env }}
+          env: {{- toYaml . | nindent 12 }}
+          {{- end }}
+          envFrom:
+            {{- if .Values.environment }}
+            - configMapRef:
+                name: {{ include "common.fullname" . }}-envmap
+            {{- end }}
+            {{- if .Values.externalEnvironmentSecrets.secretKeys }}
+            - secretRef:
+                name: {{ include "common.fullname" . }}-externalsecretmap
+            {{- end }}
+          {{- if .Values.ports }}
+          ports:
+            - name: http
+              containerPort: {{ int .Values.ports.http }}
+            {{- if .Values.metrics.enabled }}
+            - name: metrics
+              containerPort: {{ int .Values.ports.metrics }}
+            {{- end }}
+          {{- end }}
+          {{- with .Values.container.resources }}
+          resources: {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.container.livenessProbe }}
+          livenessProbe: {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.container.readinessProbe }}
+          readinessProbe: {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.container.startupProbe }}
+          startupProbe: {{- toYaml . | nindent 12 }}
+          {{- end }}
+          volumeMounts:
+            {{- if .Values.configMap.data }}
+            - name: config
+              mountPath: {{ .Values.configMap.mountPath }}
+              readOnly: true
+            {{- end }}
+            {{- with .Values.container.extraVolumeMounts }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- if .Values.cloudSqlProxy.enabled }}
+        - name: cloud-sql-proxy
+          image: {{ .Values.cloudSqlProxy.image }}
+          args:
+            {{- if .Values.cloudSqlProxy.healthCheck }}
+            - "--exit-zero-on-sigterm"
+            - "--health-check"
+            - "--http-address=0.0.0.0"
+            - "--http-port={{ int .Values.cloudSqlProxy.ports.http }}"
+            - "--quitquitquit"
+            {{- end }}
+            {{- if .Values.cloudSqlProxy.IAM }}
+            - "--auto-iam-authn"
+            {{- end }}
+            {{- if .Values.cloudSqlProxy.privateIP }}
+            - "--private-ip"
+            {{- end }}
+            - "--port={{ int .Values.cloudSqlProxy.ports.proxy }}"
+            {{- if .Values.cloudSqlProxy.debug }}
+            - "--debug"
+            {{- end }}
+            {{- if .Values.cloudSqlProxy.debugLogs }}
+            - "--debug-logs"
+            {{- end }}
+            - "{{ .Values.cloudSqlProxy.instanceConnectionName }}"
+          {{- if .Values.cloudSqlProxy.healthCheck }}
+          lifecycle:
+            preStop:
+              httpGet:
+                path: /quitquitquit
+                port: {{ int .Values.cloudSqlProxy.ports.http }}
+          startupProbe:
+            httpGet:
+              path: /startup
+              port: {{ int .Values.cloudSqlProxy.ports.http }}
+          readinessProbe:
+            httpGet:
+              path: /liveness
+              port: {{ int .Values.cloudSqlProxy.ports.http }}
+          livenessProbe:
+            httpGet:
+              path: /readiness
+              port: {{ int .Values.cloudSqlProxy.ports.http }}
+          {{- end }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+          {{- with .Values.cloudSqlProxy.resources }}
+          resources: {{- toYaml . | nindent 12 }}
+          {{- end }}
+        {{- end }}
+      volumes:
+        {{- if .Values.configMap.data }}
+        - name: config
+          configMap:
+            name: {{ include "common.fullname" . }}
+        {{- end }}
+        {{- with .Values.pod.extraVolumes }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      {{- with .Values.pod.nodeSelector }}
+      nodeSelector: {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.pod.affinity }}
+      affinity: {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.pod.tolerations }}
+      tolerations: {{- toYaml . | nindent 8 }}
+      {{- end }}
+      terminationGracePeriodSeconds: {{ int .Values.pod.terminationGracePeriodSeconds }}

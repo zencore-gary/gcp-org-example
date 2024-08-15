@@ -1,0 +1,1 @@
+{{ .Values.partOf }} {{ .Values.component }} {{ .Values.image.tag | default .Chart.AppVersion }} has been deployed successfully!

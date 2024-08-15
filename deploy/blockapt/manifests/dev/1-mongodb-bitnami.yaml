@@ -1,0 +1,28 @@
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: mongodb
+  namespace: argo
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  sources:
+    - chart: mongodb
+      repoURL: https://charts.bitnami.com/bitnami
+      targetRevision: 15.6.9
+      helm:
+        releaseName: mongodb
+        valueFiles:
+          - $values/deploy/blockapt/values/dev/mongodb.yaml
+    - ref: values
+      repoURL: "git@github.com:zencore-dev/blockapt-infra.git"
+      targetRevision: "main"
+  destination:
+    namespace: blockapt
+    server: "https://kubernetes.default.svc"
+  syncPolicy:
+    automated: {}
+    syncOptions:
+      - CreateNamespace=true

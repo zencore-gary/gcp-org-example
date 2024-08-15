@@ -1,0 +1,11 @@
+---
+image:
+  registry: europe-west1-docker.pkg.dev/blockapt-shared-14b96d25/blockapt-registry
+  tag: latest
+  pullPolicy: Always
+
+pod:
+  tolerations:
+    - key: scope
+      operator: Equal
+      value: workload

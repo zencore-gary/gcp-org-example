@@ -1,0 +1,51 @@
+---
+configs:
+  params:
+    server.insecure: true
+
+controller:
+  resources:
+    limits:
+      cpu: 500m
+      memory: 1Gi
+
+repoServer:
+  resources:
+    limits:
+      cpu: 250m
+      memory: 512Mi
+
+server:
+  service:
+    annotations:
+      # Gateway + HTTPRoute + NEG on Kubernetes service
+      # https://cloud.google.com/kubernetes-engine/docs/how-to/standalone-neg
+      cloud.google.com/neg: '{"exposed_ports":{"80":{}}}'
+  resources:
+    limits:
+      cpu: 250m
+      memory: 512Mi
+
+applicationSet:
+  resources:
+    limits:
+      cpu: 250m
+      memory: 512Mi
+
+notifications:
+  resources:
+    limits:
+      cpu: 250m
+      memory: 512Mi
+
+dex:
+  resources:
+    limits:
+      cpu: 250m
+      memory: 512Mi
+
+redis:
+  resources:
+    limits:
+      cpu: 250m
+      memory: 512Mi

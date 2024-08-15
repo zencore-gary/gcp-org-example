@@ -1,0 +1,43 @@
+fullnameOverride: "jwt-marketplace"
+component: "jwt"
+partOf: "mp"
+
+# distroless: user nonroot uid=gid=65532
+image:
+  registry: europe-west1-docker.pkg.dev/v7go-shared-1d589eb4/v7go-registry
+  repository: marketplace-jwt
+  tag: 37cc9a31957cd77241b96c7b3c69f3d512c73c52
+
+container:
+  # readOnlyRootFilesystem - Add volume mounts for Gunicorn temporary files
+  extraVolumeMounts:
+  - name: tmp
+    mountPath: /tmp
+  livenessProbe:
+    httpGet:
+      path: /healthz
+      port: http
+  resources:
+    limits:
+      cpu: 250m
+      memory: 512Mi
+
+pod:
+  # readOnlyRootFilesystem - Add volumes for Gunicorn temporary files
+  extraVolumes:
+  - name: tmp
+    emptyDir: {}
+
+deployment:
+  strategy:
+    type: "Recreate"
+
+serviceAccount:
+  annotations:
+    # Attach Google Cloud SA to Kubernetes SA using workload identity
+    iam.gke.io/gcp-service-account: "v7labs-mp-backend@v7labs-public-6fa79b13.iam.gserviceaccount.com"
+
+### Environment variables
+
+environment:
+  JWT_AUDIENCE: "signup.marketplace.gcp.v7labs.com"

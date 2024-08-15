@@ -1,0 +1,20 @@
+---
+bases:
+  - environments.yaml
+
+repositories:
+  - name: mongodb
+    url: https://mongodb.github.io/helm-charts
+
+releases:
+  # https://artifacthub.io/packages/helm/mongodb-helm-charts/community-operator
+  # https://github.com/mongodb/helm-charts/tree/main/charts/community-operator
+  - name: mongodb-operator
+    namespace: mongodb-operator
+    chart: mongodb/community-operator
+    version: 0.10.0
+    values:
+      - ../blockapt/values/{{ .Environment.Name }}/mongodb-operator.yaml
+    labels:
+      component: mongo
+    postRenderer: ./mongodb-operator-post/kustomize.sh

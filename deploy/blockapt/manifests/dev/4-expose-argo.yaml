@@ -1,0 +1,203 @@
+### Common Gateway for all applications sitting in a dedicated namespace
+# HTTPRoute, HealthCheckPolicy, and GCPBackendPolicy resources must exist in the same namespace
+# as the target Service or ServiceImport resource (aka the application namespace)
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: gateway
+---
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: Gateway
+metadata:
+  name: blockapt-external-http
+  namespace: gateway
+  annotations:
+    argocd.argoproj.io/sync-wave: "10"
+    cert-manager.io/cluster-issuer: letsencrypt
+spec:
+  gatewayClassName: gke-l7-global-external-managed
+  listeners:
+  - name: http
+    port: 80
+    protocol: HTTP
+    allowedRoutes:
+      namespaces:
+        from: Selector
+        selector:
+          matchLabels:
+            shared-gateway-access: "true"
+  - name: https
+    port: 443
+    protocol: HTTPS
+    allowedRoutes:
+      namespaces:
+        from: Selector
+        selector:
+          matchLabels:
+            shared-gateway-access: "true"
+    hostname: '*.blockapt.immersion.dev'
+    tls:
+      mode: Terminate
+      certificateRefs:
+        - name: gateway-tls
+          namespace: gateway
+          kind: Secret
+  addresses:
+    - type: NamedAddress
+      value: "blockapt-dev"  # From Terraform output
+---
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: HTTPRoute
+metadata:
+  name: http-filter-redirect
+  namespace: blockapt
+  annotations:
+    argocd.argoproj.io/sync-wave: "10"
+spec:
+  parentRefs:
+    - name: blockapt-external-http
+      namespace: gateway
+      sectionName: http
+  hostnames:
+    - "app.blockapt.immersion.dev"
+    - "argo.blockapt.immersion.dev"
+  rules:
+    - filters:
+      - type: RequestRedirect
+        requestRedirect:
+          scheme: https
+          statusCode: 301
+### BlockAPT master service
+---
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: HTTPRoute
+metadata:
+  name: master-blockapt
+  namespace: blockapt
+  annotations:
+    argocd.argoproj.io/sync-wave: "20"
+spec:
+  parentRefs:
+    - name: blockapt-external-http
+      namespace: gateway
+      sectionName: https
+  hostnames:
+    - "app.blockapt.immersion.dev"
+  rules:
+    - matches:
+      - path:
+          type: PathPrefix
+          value: /backend
+      backendRefs:
+      - name: master-blockapt
+        port: 8080
+---
+apiVersion: networking.gke.io/v1
+kind: HealthCheckPolicy
+metadata:
+  name: master-blockapt
+  namespace: blockapt
+  annotations:
+    argocd.argoproj.io/sync-wave: "20"
+spec:
+  default:
+    checkIntervalSec: 15
+    timeoutSec: 15
+    healthyThreshold: 1
+    unhealthyThreshold: 2
+    logConfig:
+      enabled: TRUE
+    config:
+      type: HTTP
+      httpHealthCheck:
+        portSpecification: USE_SERVING_PORT
+        requestPath: "/healthz"
+  targetRef:
+    group: ""
+    kind: Service
+    name: master-blockapt
+---
+apiVersion: networking.gke.io/v1
+kind: GCPBackendPolicy
+metadata:
+  name: master-blockapt
+  namespace: blockapt
+  annotations:
+    argocd.argoproj.io/sync-wave: "20"
+spec:
+  default:
+    securityPolicy: "blockapt-dev-policy"  # From Terraform output
+    timeoutSec: 120
+  targetRef:
+    group: ""
+    kind: Service
+    name: master-blockapt
+### Argo CD
+---
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: HTTPRoute
+metadata:
+  name: argocd
+  namespace: argo
+spec:
+  parentRefs:
+    - name: blockapt-external-http
+      namespace: gateway
+      sectionName: https
+  hostnames:
+    - "argo.blockapt.immersion.dev"
+  rules:
+    - backendRefs:
+      - name: argocd-server
+        port: 80
+---
+apiVersion: networking.gke.io/v1
+kind: GCPBackendPolicy
+metadata:
+  name: argocd-cloudarmor
+  namespace: argo
+spec:
+  default:
+    securityPolicy: "blockapt-dev-policy"  # From Terraform output
+    timeoutSec: 120
+  targetRef:
+    group: ""
+    kind: Service
+    name: argocd-server
+---
+apiVersion: networking.gke.io/v1
+kind: GCPBackendPolicy
+metadata:
+  name: argocd-iap
+  namespace: argo
+spec:
+  default:
+    iap:
+      enabled: true
+      clientID: "xxxxxxxxxxxx-yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy.apps.googleusercontent.com"  # Created manually
+      oauth2ClientSecret:
+        name: "argocd-iap"  # Created by the ExternalSecret below
+  targetRef:
+    group: ""
+    kind: Service
+    name: argocd-server
+---
+apiVersion: external-secrets.io/v1beta1
+kind: ExternalSecret
+metadata:
+  name: argocd-iap
+  namespace: argo
+  annotations:
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+    argocd.argoproj.io/sync-wave: "20"
+spec:
+  secretStoreRef:
+    kind: ClusterSecretStore
+    name: gcpsm
+  target:
+    name: argocd-iap
+  data:
+  - secretKey: key
+    remoteRef:
+      key: ARGO_IAP_CLIENT_SECRET

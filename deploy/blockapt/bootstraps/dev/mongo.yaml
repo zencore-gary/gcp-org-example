@@ -1,0 +1,31 @@
+# MongoDB CLI - Connect using Kubernetes service
+# mongosh "$MONGO_URI"
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: mongo
+  namespace: blockapt
+spec:
+  containers:
+  # Main container
+  - name: mongo
+    command:
+      - "tail"
+      - "-f"
+      - "/dev/null"
+    image: mongo:7.0
+    imagePullPolicy: Always
+    env:
+    - name: MONGO_URI
+      valueFrom:
+        secretKeyRef:
+          # Created by the MongoDB operator: <mongodb-resource-name>-<database>-<username>
+          name: mongodb-admin-admin
+          key: "connectionString.standard"
+  # Kill pod immediately
+  terminationGracePeriodSeconds: 0
+  tolerations:
+    - key: scope
+      operator: Equal
+      value: workload

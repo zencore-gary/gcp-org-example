@@ -1,0 +1,86 @@
+---
+## @section Common parameters
+
+## @param image.registry Container image registry
+## @param image.repository Container image repository
+## @param image.tag Container image tag
+## @param image.digest Container image digest in the way `sha256:aa...`. If this parameter is set, overrides `image.tag`
+## @param image.pullPolicy Container image pull policy. Allowed values: `Always`, `Never`, `IfNotPresent`
+## @param image.pullSecrets Specify container registry secret names as an array
+##
+image:
+  ## Private container image
+  registry: path/to/registry
+  repository: app
+  tag: ""
+  digest: ""
+  pullPolicy: IfNotPresent
+  ## Secrets must be manually created beforehand in the namespace
+  ## You can also patch targeted namespace 'default' Service Account with 'imagePullSecrets' instead of using pullSecrets
+  pullSecrets: []
+
+## @param commonLabels Add labels to all deployed objects
+## @param component Component standard label value and container name
+## @param partOf Part-of standard label value
+##
+commonLabels: {}
+component: "mongodb"
+partOf: "blockapt"
+
+## @param serviceAccount.annotations Service Account extra annotations
+## @param serviceAccount.labels Service Account extra labels
+##
+serviceAccount:
+  annotations: {}
+  labels: {}
+
+blockAPT:
+  database: "icyber_logger_db"
+  users:
+    - "graphs"
+    - "logger"
+    - "master"
+    - "search"
+
+## @param externalSecretStore External-secrets store (to read from Google Secret Manager)
+## @skip externalSecretStore.kind
+## @skip externalSecretStore.name
+externalSecretStore:
+  kind: ClusterSecretStore
+  name: gcpsm
+
+## @extra mongodb `MongoDBCommunity` resource configuration
+##
+mongodb:
+  ## @param mongodb.annotations `MongoDBCommunity` extra annotations
+  ## @param mongodb.labels `MongoDBCommunity` Account extra labels
+  annotations: {}
+  labels: {}
+
+  ## @param mongodb.additionalConnectionStringConfig Additional options to be appended to the connection string
+  ## @param mongodb.additionalMongodConfig Additional configuration that can be passed to each data-bearing mongod at runtime
+  ## https://www.mongodb.com/docs/manual/reference/configuration-options/
+  additionalConnectionStringConfig: {}
+  additionalMongodConfig: {}
+  ## @param mongodb.agent AgentConfiguration sets options for the MongoDB automation agent
+  agent: {}
+  ## @param mongodb.arbiters Arbiters is the number of arbiters to add (not recommended to have more than one arbiter per Replica Set)
+  ## https://www.mongodb.com/docs/manual/tutorial/add-replica-set-arbiter/
+  arbiters: 1
+  ## @param mongodb.featureCompatibilityVersion Configures the feature compatibility version
+  featureCompatibilityVersion: ""
+  ## @param mongodb.members The number of members in the replica set
+  members: 2
+  ## @param mongodb.prometheus Prometheus configuration
+  prometheus: {}
+  ## @param mongodb.security Configure security features, such as TLS, and authentication settings for a deployment
+  ## @skip mongodb.authentication.modes
+  security:
+    authentication:
+      modes: ["SCRAM"]
+  ## @param mongodb.statefulSet Custom `StatefulSet` specification that will be merged into the operator created one
+  statefulSet: {}
+  ## @param mongodb.users MongoDB extra users that will be configured
+  users: []
+  ## @param mongodb.version Version of MongoDB will be used
+  version: "7.0.12"

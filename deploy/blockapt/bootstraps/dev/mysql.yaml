@@ -1,0 +1,53 @@
+# Attach Google Cloud Service Account to Kubernetes Service Account to use passwordless IAM authentication
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: mysql
+  namespace: blockapt
+  annotations:
+    iam.gke.io/gcp-service-account: "blockapt-dev-mysql-admin@blockapt-dev-72311d19.iam.gserviceaccount.com"  # From Terraform output
+automountServiceAccountToken: false
+# MySQL CLI - Connect to CloudSQL instance using proxy
+# mysql -u "$DB_USERNAME" -h "$DB_HOST" -p
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: mysql
+  namespace: blockapt
+spec:
+  containers:
+  # Main container
+  - name: mysql
+    command:
+      - "tail"
+      - "-f"
+      - "/dev/null"
+    image: mysql:8.0-debian
+    imagePullPolicy: Always
+    env:
+    - name: DB_USERNAME
+      value: "blockapt-dev-euw1-5284a437"  # From Terraform output
+    - name: DB_HOST
+      value: "127.0.0.1"
+    # Avoid error: authentication plugin 'mysql_clear_password' cannot be loaded
+    - name: LIBMYSQL_ENABLE_CLEARTEXT_PLUGIN
+      value: "y"
+  # Sidecar: CloudSQL proxy
+  - name: cloudsql-proxy
+    image: gcr.io/cloud-sql-connectors/cloud-sql-proxy:2.11.4-bullseye
+    imagePullPolicy: IfNotPresent
+    args:
+    - "--port=3306"
+    - "--private-ip"
+    - "--debug"
+    - "--debug-logs"
+    - "blockapt-dev-72311d19:europe-west1:blockapt-dev-euw1-5284a437"  # From Terraform output
+  serviceAccount: mysql
+  # Kill pod immediately
+  terminationGracePeriodSeconds: 0
+  tolerations:
+    - key: scope
+      operator: Equal
+      value: workload

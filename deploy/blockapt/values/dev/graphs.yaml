@@ -1,0 +1,36 @@
+component: graphs
+
+image:
+  repository: graphs
+
+# node: user node uid=gid=1000
+container:
+  env:
+    - name: MONGO_URI
+      valueFrom:
+        secretKeyRef:
+          name: mongodb-icyber-logger-db-graphs
+          key: "connectionString.standard"
+  resources:
+    requests:
+      cpu: 100m
+      memory: 1Gi
+    limits:
+      cpu: 1
+      memory: 1Gi
+  securityContext:
+    readOnlyRootFilesystem: false
+    runAsGroup: 1000
+    runAsUser: 1000
+
+pod:
+  securityContext:
+    fsGroup: 1000
+
+serviceAccount:
+  extraSecrets:
+    - name: mongodb-icyber-logger-db-graphs
+
+environment:
+  APP_HOST: "0.0.0.0"
+  APP_PORT: 8080

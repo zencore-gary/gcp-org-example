@@ -1,0 +1,28 @@
+component: graphs
+
+image:
+  repository: graphs
+
+# python: user nonroot uid=gid=65532 (helm chart default from distroless)
+container:
+  env:
+    - name: MONGO_URI
+      valueFrom:
+        secretKeyRef:
+          name: mongodb-icyber-logger-db-graphs
+          key: "connectionString.standard"
+  resources:
+    requests:
+      cpu: 100m
+      memory: 1Gi
+    limits:
+      cpu: 1
+      memory: 1Gi
+
+serviceAccount:
+  extraSecrets:
+    - name: mongodb-icyber-logger-db-graphs
+
+environment:
+  APP_HOST: "0.0.0.0"
+  APP_PORT: 8080

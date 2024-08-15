@@ -1,0 +1,10 @@
+---
+mongodb:
+  statefulSet:
+    spec:
+      template:
+        spec:
+          tolerations:
+            - key: scope
+              operator: Equal
+              value: workload

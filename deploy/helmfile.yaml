@@ -1,0 +1,85 @@
+---
+bases:
+  - helmfiles/helmDefaults.yaml
+  - helmfiles/environments.yaml
+
+releases:
+  - name: mongodb
+    namespace: blockapt
+    chart: charts/mongodb/
+    values:
+      - blockapt/values/{{ .Environment.Name }}/common.yaml
+      - blockapt/values/{{ .Environment.Name }}/mongodb.yaml
+    labels:
+      default: true
+      component: mongo
+
+  - name: master
+    namespace: blockapt
+    chart: charts/blockapt/
+    values:
+      - blockapt/values/{{ .Environment.Name }}/common.yaml
+      - blockapt/values/{{ .Environment.Name }}/master.yaml
+    labels:
+      default: true
+      component: master
+
+  - name: logger
+    namespace: blockapt
+    chart: charts/blockapt/
+    values:
+      - blockapt/values/{{ .Environment.Name }}/common.yaml
+      - blockapt/values/{{ .Environment.Name }}/logger.yaml
+    labels:
+      default: true
+      component: logger
+
+  - name: search-logger
+    namespace: blockapt
+    chart: charts/blockapt/
+    values:
+      - blockapt/values/{{ .Environment.Name }}/common.yaml
+      - blockapt/values/{{ .Environment.Name }}/search-logger.yaml
+    labels:
+      default: true
+      component: search-logger
+
+  - name: graphs
+    namespace: blockapt
+    chart: charts/blockapt/
+    values:
+      - blockapt/values/{{ .Environment.Name }}/common.yaml
+      - blockapt/values/{{ .Environment.Name }}/graphs.yaml
+    labels:
+      default: true
+      component: graphs
+
+  - name: socket
+    namespace: blockapt
+    chart: charts/blockapt/
+    values:
+      - blockapt/values/{{ .Environment.Name }}/common.yaml
+      - blockapt/values/{{ .Environment.Name }}/socket.yaml
+    labels:
+      default: true
+      component: socket
+
+  - name: pdf
+    namespace: blockapt
+    chart: charts/blockapt/
+    values:
+      - blockapt/values/{{ .Environment.Name }}/common.yaml
+      - blockapt/values/{{ .Environment.Name }}/pdf.yaml
+    labels:
+      default: false
+      component: pdf
+
+  - name: mte
+    namespace: blockapt
+    chart: charts/blockapt/
+    values:
+      - blockapt/values/{{ .Environment.Name }}/common.yaml
+      - blockapt/values/{{ .Environment.Name }}/mte.yaml
+    labels:
+      default: false
+      component: mte

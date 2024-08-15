@@ -1,0 +1,22 @@
+# Argo CD app of apps
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: app-of-apps
+  namespace: argo
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    path: deploy/blockapt/manifests/dev
+    repoURL: "git@github.com:zencore-dev/blockapt-infra.git"
+    targetRevision: "main"
+  destination:
+    namespace: default
+    server: "https://kubernetes.default.svc"
+  syncPolicy:
+    automated: {}
+    syncOptions:
+      - CreateNamespace=true

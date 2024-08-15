@@ -1,0 +1,15 @@
+---
+apiVersion: v2
+name: mongo
+version: 1.0.0
+appVersion: 1.0.0
+kubeVersion: ">= 1.25.0-0"
+description: "Generic Helm chart to deploy MongoDB using the community operator"
+home: https://github.com/zencore-dev/blockapt-infra/tree/main/deploy/charts/mongo/
+keywords:
+  - mongo
+maintainers:
+  - name: Zencore
+    url: https://github.com/zencore-dev/
+sources:
+  - https://github.com/zencore-dev/blockapt-infra/

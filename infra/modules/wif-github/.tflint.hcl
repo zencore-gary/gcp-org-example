@@ -1,0 +1,1 @@
+../../.tflint-modules.hcl

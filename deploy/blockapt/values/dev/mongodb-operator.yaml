@@ -1,0 +1,15 @@
+---
+operator:
+  watchNamespace: "*"
+  resources:
+    limits:
+      cpu: 500m
+      memory: 1Gi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+  # TODO - Create PR at https://github.com/mongodb/helm-charts to add affinity, nodeSelector and tolerations
+  tolerations:
+    - key: "components.gke.io/gke-managed-components"
+      operator: Equal
+      value: "true"

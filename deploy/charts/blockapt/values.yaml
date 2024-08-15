@@ -1,0 +1,300 @@
+---
+## @section Common parameters
+
+## @param nameOverride String to partially override `common.name` template (will maintain the release name)
+##
+nameOverride: ""
+## @param fullnameOverride String to fully override `common.fullname` template
+##
+fullnameOverride: ""
+
+## @param replicaCount Number of pods to deploy
+replicaCount: 1
+
+## @param image.registry Container image registry
+## @param image.repository Container image repository
+## @param image.tag Container image tag
+## @param image.digest Container image digest in the way `sha256:aa...`. If this parameter is set, overrides `image.tag`
+## @param image.pullPolicy Container image pull policy. Allowed values: `Always`, `Never`, `IfNotPresent`
+## @param image.pullSecrets Specify container registry secret names as an array
+##
+image:
+  ## Private container image
+  registry: path/to/registry
+  repository: app
+  tag: ""
+  digest: ""
+  pullPolicy: IfNotPresent
+  ## Secrets must be manually created beforehand in the namespace
+  ## You can also patch targeted namespace 'default' Service Account with 'imagePullSecrets' instead of using pullSecrets
+  pullSecrets: []
+
+## @param commonLabels Add labels to all deployed objects
+## @param component Component standard label value and container name
+## @param partOf Part-of standard label value
+##
+commonLabels: {}
+component: "app"
+partOf: "blockapt"
+
+## @param ports.http Application container port (HTTP)
+## @param ports.metrics Promotheus exporter container port (HTTP)
+##
+ports:
+  http: 8080
+  metrics: 8081
+
+## @section Deployment configuration
+
+## @param environment Container environment variables
+## @param configMap.data Custom ConfigMap data
+## @param configMap.mountPath Custom ConfigMap mount path
+##
+environment: {}
+configMap:
+  data: ""
+  mountPath: "/etc/app"
+
+## @extra externalEnvironmentSecrets Container secret environment variables pulled from Google Secret Manager (GCPSM) using external-secrets
+## @param externalEnvironmentSecrets.refreshInterval Used to configure store refresh interval in seconds, empty or 0 will default to the controller config
+## @param externalEnvironmentSecrets.secretStoreRef.kind Allowed values: `SecretStore` or `ClusterSecretStore`
+## @param externalEnvironmentSecrets.secretStoreRef.name Secret store to use when fetching the secret data
+## @param externalEnvironmentSecrets.target Extra target options to describe how the secret shall be created
+## @param externalEnvironmentSecrets.secretKeys GCPSM secrets, mapped 1:1 as environment variables
+## @param externalEnvironmentSecrets.prefix GCPSM secrets prefix, stripped (optional)
+## https://external-secrets.io/latest/api/externalsecret/
+##
+externalEnvironmentSecrets:
+  refreshInterval: 0
+  secretStoreRef:
+    kind: ClusterSecretStore
+    name: ""
+  target: {}
+  secretKeys: []
+  prefix: ""
+
+## @param deployment.annotations Deployment extra annotations
+## @param deployment.labels Deployment extra labels
+## @param deployment.strategy Deployment strategy
+##
+deployment:
+  annotations: {}
+  labels: {}
+  strategy: {}
+
+pod:
+  ## @param pod.annotations Extra annotations for Deployment pods
+  ## @param pod.labels Extra labels for Deployment pods
+  ##
+  annotations: {}
+  labels: {}
+  ## @param pod.securityContext.enabled Enable pods Security Context
+  ## @param pod.securityContext.fsGroup Special supplemental GID that applies to all containers in a pod
+  ## @param pod.securityContext.fsGroupChangePolicy Defines behavior of changing ownership and permission of the volume before being exposed inside pods. Valid values are `OnRootMismatch` and `Always`
+  ## @param pod.securityContext.sysctls List of namespaced sysctls used for the pod
+  ##
+  securityContext:
+    enabled: true
+    fsGroup: 65532
+    fsGroupChangePolicy: "Always"
+    sysctls: []
+  ## @param pod.extraVolumes Specify extra list of additional volumes for pod
+  ##
+  extraVolumes: []
+  ## @param pod.affinity Affinity for pods assignment
+  ## @param pod.nodeSelector Node labels for pods assignment
+  ## @param pod.tolerations Tolerations for pods assignment
+  ## @param pod.terminationGracePeriodSeconds Duration in seconds the pod needs to terminate gracefully
+  ##
+  affinity: {}
+  nodeSelector: {}
+  tolerations: []
+  terminationGracePeriodSeconds: 30
+
+container:
+  ## @param container.command Entrypoint array
+  ## @param container.args Arguments to the entrypoint array
+  ## @param container.env List of environment variables to set in the container
+  ##
+  command: []
+  args: []
+  env: []
+  ## @param container.resources Resources requests/limits for container
+  ## @param container.extraVolumeMounts Specify extra list of additional volumeMounts for container
+  ##
+  extraVolumeMounts: []
+  resources: {}
+  ## @param container.securityContext.enabled Enable containers Security Context
+  ## @param container.securityContext.readOnlyRootFilesystem Whether this container has a read-only root filesystem
+  ## @param container.securityContext.runAsGroup The GID to run the entrypoint of the container process
+  ## @param container.securityContext.runAsNonRoot Indicates that the container must run as a non-root user
+  ## @param container.securityContext.runAsUser The UID to run the entrypoint of the container process
+  ##
+  securityContext:
+    enabled: true
+    readOnlyRootFilesystem: true
+    runAsGroup: 65532
+    runAsNonRoot: true
+    runAsUser: 65532
+  ## @param container.livenessProbe Override default liveness probe
+  ## @param container.readinessProbe Override default readiness probe
+  ## @param container.startupProbe Add custom startup probe
+  ##
+  livenessProbe: {}
+  readinessProbe: {}
+  startupProbe: {}
+
+## https://github.com/GoogleCloudPlatform/cloud-sql-proxy/blob/main/examples/k8s-health-check/proxy_with_http_health_check.yaml
+## @param cloudSqlProxy.enabled Enable Google Cloud SQL Proxy sidecar
+## @param cloudSqlProxy.image Cloud SQL Proxy container image
+## @param cloudSqlProxy.ports.proxy Port for Cloud SQL Proxy
+## @param cloudSqlProxy.ports.http Port for Prometheus and health check server
+## @param cloudSqlProxy.instanceConnectionName Instance Connection Name
+## @param cloudSqlProxy.privateIP Connect to the private IP address for all instances
+## @param cloudSqlProxy.IAM Enable passwordless IAM authentication for all instances
+## @param cloudSqlProxy.debug Enable pprof on the localhost admin server
+## @param cloudSqlProxy.debugLogs Enable debug logging
+## @param cloudSqlProxy.healthCheck Enables endpoints /startup, /liveness and /readiness and probes
+## @param cloudSqlProxy.resources Resources requests/limits for container
+##
+cloudSqlProxy:
+  enabled: false
+  image: gcr.io/cloud-sql-connectors/cloud-sql-proxy:2.11.4-bullseye
+  ports:
+    proxy: 3306
+    http: 9090
+  instanceConnectionName: "project:region:instance"
+  privateIP: true
+  IAM: true
+  debug: false
+  debugLogs: false
+  healthCheck: true
+  resources: {}
+
+## @section Service configuration
+
+## @param service.enabled Enable service to container ports
+## @param service.type Service type. Allowed values: `ExternalName`, `ClusterIP`, `NodePort`, `LoadBalance`
+## @param service.annotations Service extra annotations
+## @param service.neg Add Google Network Endpoint Group (NEG) annotation to service port number with an automatically generated name (used by Gateways + HTTPRoutes)
+## https://cloud.google.com/kubernetes-engine/docs/how-to/standalone-neg
+## @param service.labels Service extra labels
+## @param service.ports.http Application service port (HTTP)
+## @param service.ports.metrics Promotheus exporter service port (HTTP)
+##
+service:
+  enabled: true
+  type: ClusterIP
+  neg: true
+  annotations: {}
+  labels: {}
+  ports:
+    http: 8080
+    metrics: 8081
+
+## @section Service Account and RBAC configuration
+
+## @param serviceAccount.create Enable creation of a Service Account for pod(s)
+## @param serviceAccount.annotations Service Account extra annotations
+## @param serviceAccount.annotations Service Account extra annotations
+## @param serviceAccount.labels Service Account extra labels
+## @param serviceAccount.automountServiceAccountToken API token automatically mounted into pods using this Service Account. Set to `false` if pods do not use the K8s API
+## @param serviceAccount.enforceMountableSecrets Secrets can only be mounted on specified types of resources, enhancing the security
+## https://kubernetes.io/docs/concepts/security/service-accounts/#enforce-mountable-secrets
+## @param serviceAccount.extraSecrets List of extra secrets allowed to be mounted by pods using this Service Account
+##
+serviceAccount:
+  create: true
+  annotations: {}
+  labels: {}
+  automountServiceAccountToken: false
+  enforceMountableSecrets: true
+  extraSecrets: []
+
+## @param rbac.create Specifies whether RBAC resources should be created
+## @param rbac.rules Custom RBAC rules to set
+##
+rbac:
+  create: false
+  rules: []
+
+## @section Ingress configuration
+
+## @param ingress.enabled Enable ingress to service port `http` (HTTP)
+## @param ingress.annotations Ingress extra annotations
+## @param ingress.labels Ingress extra labels
+## @param ingress.className Set `ingressClassName` on the ingress record
+## @param ingress.host Fully qualified domain name of a network host
+## @param ingress.path Path to application
+## @param ingress.pathType Determines the interpretation of the `Path` matching.  Allowed values: `Exact`, `Prefix`, `ImplementationSpecific`
+## @param ingress.tls Enable TLS configuration for `hostname`
+##
+ingress:
+  enabled: false
+  annotations: {}
+  labels: {}
+  className: ""
+  host: ""
+  path: "/"
+  pathType: "Prefix"
+  tls: []
+
+## @section Gateway configuration
+
+## @param gateway.enabled Enable Gateway to service port `http` (HTTP)
+## @param gateway.annotations Gateway extra annotations
+## @param gateway.labels Gateway extra labels
+## @param gateway.className Set `gatewayClassName` on the Gateway record
+## @param gateway.addresses Addresses requested for this Gateway
+## @param gateway.listeners Listeners associated with this Gateway
+##
+gateway:
+  enabled: false
+  annotations: {}
+  labels: {}
+  className: ""
+  addresses: []
+  listeners: []
+
+## @section Network Policy configuration
+
+## @param networkPolicy.enabled Enable predefined Network Policies
+## @param networkPolicy.labels Network Policies extra labels
+##
+networkPolicy:
+  enabled: false
+  labels: {}
+  ## @param networkPolicy.allowExternalEgress Allow pods to access any range of port and all destinations
+  ## @param networkPolicy.allowGoogleCloudProbers Allow Google Cloud probers (Load balancer health checks)
+  ## @param networkPolicy.allowGoogleCloudManagedCollection Allow Google Cloud Managed Collection (Prometheus metrics scraping)
+  ## @param networkPolicy.extraIngress Add extra ingress rules to the NetworkPolicy
+  ## @param networkPolicy.extraEgress Add extra egress rules to the NetworkPolicy
+  ##
+  allowExternalEgress: true
+  allowGoogleCloudProbers: true
+  allowGoogleCloudManagedCollection: true
+  extraIngress: []
+  extraEgress: []
+
+## @section Monitoring configuration
+
+metrics:
+  ## @param metrics.enabled Enable Prometheus metrics endpoint
+  ##
+  enabled: false
+  ## @param metrics.podMonitoring.enabled Creates a Prometheus Operator PodMonitor (requires `metrics.enabled` to be `true`)
+  ## @extra metrics.podMonitoring.endpoint The endpoint to scrape on the selected pods (`metrics` port)
+  ## @param metrics.podMonitoring.endpoint.interval Interval at which to scrape metrics
+  ## @param metrics.podMonitoring.endpoint.metricRelabeling Relabeling rules for metrics scraped from this endpoint
+  ## @param metrics.podMonitoring.endpoint.timeout Timeout for metrics scrapes
+  ## @param metrics.podMonitoring.limits Limits to apply at scrape time
+  ## @param metrics.podMonitoring.targetLabels Labels to add to the Prometheus target for discovered endpoints
+  ##
+  podMonitoring:
+    enabled: false
+    endpoint:
+      interval: ""
+      metricRelabeling: []
+      timeout: ""
+    limits: {}
+    targetLabels: {}

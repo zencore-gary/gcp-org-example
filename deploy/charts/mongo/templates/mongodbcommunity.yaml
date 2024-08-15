@@ -1,0 +1,62 @@
+---
+apiVersion: mongodbcommunity.mongodb.com/v1
+kind: MongoDBCommunity
+metadata:
+  name: mongodb
+  {{- with .Values.mongodb.annotations }}
+  annotations: {{- toYaml . | nindent 4 }}
+  {{- end }}
+  labels: {{- include "common.labels" . | nindent 4 }}
+    {{- with .Values.commonLabels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+    {{- with .Values.mongodb.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  {{- with .Values.mongodb.additionalConnectionStringConfig }}
+  additionalConnectionStringConfig: {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with .Values.mongodb.additionalMongodConfig }}
+  additionalMongodConfig: {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with .Values.mongodb.agent }}
+  agent: {{- toYaml . | nindent 4 }}
+  {{- end }}
+  arbiters: {{ int .Values.mongodb.arbiters }}
+  {{- with .Values.mongodb.featureCompatibilityVersion }}
+  featureCompatibilityVersion: {{ . | quote }}
+  {{- end }}
+  members: {{ int .Values.mongodb.members }}
+  {{- with .Values.mongodb.prometheus }}
+  prometheus: {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with .Values.mongodb.security }}
+  security: {{- toYaml . | nindent 4 }}
+  {{- end }}
+  type: ReplicaSet
+  version: {{ .Values.mongodb.version | quote }}
+  {{- with .Values.mongodb.statefulSet }}
+  statefulSet: {{- toYaml . | nindent 4 }}
+  {{- end }}
+  users:
+    # Default admin
+    - name: admin
+      db: admin
+      passwordSecretRef:
+        name: es-mongodb-admin
+      roles:
+        - name: root
+          db: admin
+      scramCredentialsSecretName: mongodb-admin
+    # Loop over application users
+    {{- range .Values.blockAPT.users }}
+    - name: {{ . }}
+      db: icyber_logger_db
+      passwordSecretRef:
+        name: es-mongodb-{{ . }}
+      roles:
+        - name: readWrite
+          db: {{ $.Values.blockAPT.database }}
+      scramCredentialsSecretName: mongodb-{{ . }}
+    {{- end }}
